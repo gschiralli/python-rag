@@ -53,19 +53,24 @@ def add_to_chroma(chunks: list[Document]):
     existing_ids = set(existing_items["ids"])
     print(f"Number of existing documents in DB: {len(existing_ids)}")
 
-    # Only add documents that don't exist in the DB.
-    new_chunks = []
-    for chunk in chunks_with_ids:
-        if chunk.metadata["id"] not in existing_ids:
-            new_chunks.append(chunk)
+    
+    # Split chunks into smaller batches
+    batch_size = 100  # Adjust this value based on your needs
+    batches = [chunks_with_ids[i:i + batch_size] for i in range(0, len(chunks_with_ids), batch_size)]
 
-    if len(new_chunks):
-        print(f"👉 Adding new documents: {len(new_chunks)}")
-        new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
-        db.add_documents(new_chunks, ids=new_chunk_ids)
-        db.persist()
-    else:
-        print("✅ No new documents to add")
+    for batch in batches:
+        new_chunks = []
+        for chunk in batch:
+            if chunk.metadata["id"] not in existing_ids:
+                new_chunks.append(chunk)
+
+        if len(new_chunks):
+            print(f"👉 Adding new documents: {len(new_chunks)}")
+            new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
+            db.add_documents(new_chunks, ids=new_chunk_ids)
+            db.persist()
+        else:
+            print("✅ No new documents to add")
 
 def calculate_chunk_ids(chunks):
     # This will create IDs like "data/rules.pdf:3:1"
